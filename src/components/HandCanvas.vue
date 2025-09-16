@@ -49,58 +49,79 @@ onMounted(() => {
 
   })
 
-  hands.onResults((results: Results) => {
-    if (!ctx || !canvasEl.value) return
-    ctx.save()
+hands.onResults(results => {
+  if (!ctx || !canvasEl.value) return
 
+  const w = canvasEl.value.width
+  const h = canvasEl.value.height
 
-  // Mirror horizontally
-  ctx.translate(canvasEl.value.width, 0)
+  ctx.save()
+  ctx.clearRect(0, 0, w, h)
+
+  // Mirror video + drawing
+  ctx.translate(w, 0)
   ctx.scale(-1, 1)
+  ctx.drawImage(results.image, 0, 0, w, h)
 
+  if (results.multiHandLandmarks) {
+    for (const landmarks of results.multiHandLandmarks) {
+      // Draw skeleton
+      drawingUtils.drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, {
+        color: '#00FF00',
+        lineWidth: 2
+      })
+      drawingUtils.drawLandmarks(ctx, landmarks, {
+        color: '#FF0000',
+        radius: 3
+      })
 
-    ctx.clearRect(0, 0, canvasEl.value.width, canvasEl.value.height)
-    ctx.drawImage(results.image, 0, 0, canvasEl.value.width, canvasEl.value.height)
-
-    if (results.multiHandLandmarks) {
-      for (const landmarks of results.multiHandLandmarks) {
-        drawingUtils.drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, {
-          color: '#00FF00',
-          lineWidth: 2
-        })
-        drawingUtils.drawLandmarks(ctx, landmarks, {
-          color: '#FF0000',
-          radius: 3
-        })
-
-        if (isPointing(landmarks)) {
-          console.log('👉 Pointing detected')
-        } else if (isGrabbing(landmarks)) {
-          console.log('✊ Grabbing detected')
-        }
-        //
-        for (const landmarks of results.multiHandLandmarks) {
-      // Index fingertip
+      // 👉 fingertip positions
       const indexTip = landmarks[8]
+      const thumbTip = landmarks[4]
 
-      // Convert normalized (0–1) → canvas pixels
-      const px = indexTip.x * canvasEl.value.width
-      const py = indexTip.y * canvasEl.value.height
+      // Pixel positions (unmirrored  )
+      const ix = indexTip.x * w
+      const iy = indexTip.y * h
+      const tx = thumbTip.x * w
+      const ty = thumbTip.y * h
 
-      // Draw a red circle at the pointing position
+      // Draw circles
       ctx.beginPath()
-      ctx.arc(px, py, 10, 0, 2 * Math.PI)
+      ctx.arc(ix, iy, 8, 0, 2 * Math.PI)
+      ctx.fillStyle = 'rgba(255,0,0,0.7)'
+      ctx.fill()
+
+      ctx.beginPath()
+      ctx.arc(tx, ty, 8, 0, 2 * Math.PI)
       ctx.fillStyle = 'rgba(0,0,255,0.7)'
       ctx.fill()
 
-      console.log('👉 pointing at screen position', { x: px, y: py })
-    }
+      // 👉 Detect "catch" (pinch = thumb close to index)
+      const dx = tx - ix
+      const dy = ty - iy
+      const dist = Math.hypot(dx, dy)
 
+      // Midpoint (catch position, mirror compensation)
+      const cx = canvasEl.value.width - (ix + tx) / 2
+      const cy = (iy + ty) / 2
+
+      const catchThreshold = 40 // px, adjust for your setup
+      const isCatch = dist < catchThreshold
+
+      // Draw status indicator (small rect in lower-left corner)
+      const rectSize = 30
+      ctx.fillStyle = isCatch ? 'rgba(0,255,0,0.7)' : 'rgba(255,0,0,0.7)'
+      ctx.fillRect(5, h - rectSize - 5, rectSize, rectSize)
+
+      if (isCatch) {
+        console.log('🤏 Catch detected at', { x: cx, y: cy })
       }
     }
+  }
 
-    ctx.restore()
-  })
+  ctx.restore()
+})
+
 
   const camera = new Camera(videoEl.value, {
     onFrame: async () => {
@@ -119,3 +140,13 @@ onMounted(() => {
     <canvas ref="canvasEl" width="640" height="480"></canvas>
   </div>
 </template>
+
+<style scoped>
+canvas {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+video.hidden {
+  display: none;
+} /* Hide the video element */
+</style>
