@@ -1,0 +1,27 @@
+{
+  "name": "vrbot",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "type-check": "vue-tsc -p tsconfig.app.json --noEmit",
+    "build": "vue-tsc -p tsconfig.app.json --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "~5.7.2",
+    "vite": "^7.1.5",
+    "vite-plugin-static-copy": "^3.1.2",
+    "vue-tsc": "^3.0.7"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/pose": "^0.5.1675469404",
+    "vue": "^3.5.21"
+  }
+}
