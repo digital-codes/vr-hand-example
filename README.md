@@ -1,4 +1,4 @@
-# VrBot
+# Vr Hand Example
 
 Example code for detection of hand position and simple guestures via mediapipe library
 
